@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Staff Attendance Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c28;
+      --border: #2a2a3d;
+      --accent: #00e5a0;
+      --accent2: #7b5cf5;
+      --warn: #ff6b6b;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0,229,160,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(123,92,245,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .container { position: relative; z-index: 1; width: 100%; max-width: 420px; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .logo-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+    .logo-text { font-family: var(--mono); font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+    h1 { font-family: var(--mono); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); line-height: 1.2; }
+    h1 span { color: var(--accent); }
+    .clock-display { font-family: var(--mono); font-size: 38px; font-weight: 700; text-align: center; color: var(--text); letter-spacing: 0.04em; margin-bottom: 4px; }
+    .date-display { font-family: var(--mono); font-size: 12px; text-align: center; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 32px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 16px; transition: border-color 0.3s; }
+    .card:hover { border-color: #3a3a55; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 11px; font-family: var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; font-family: var(--sans); font-size: 15px; color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.1); }
+    input::placeholder { color: var(--muted); }
+    .btn { width: 100%; padding: 14px 20px; border: none; border-radius: 10px; font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #0a0f0a; }
+    .btn-primary:hover:not(:disabled) { background: #00ffb3; box-shadow: 0 0 20px rgba(0,229,160,0.3); transform: translateY(-1px); }
+    .btn-danger { background: transparent; color: var(--warn); border: 1px solid var(--warn); }
+    .btn-danger:hover:not(:disabled) { background: rgba(255,107,107,0.1); box-shadow: 0 0 20px rgba(255,107,107,0.15); transform: translateY(-1px); }
+    .status-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; font-family: var(--mono); }
+    .status-bar.checking { background: rgba(123,92,245,0.1); border: 1px solid rgba(123,92,245,0.3); color: #a78bfa; }
+    .status-bar.ok { background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.25); color: var(--accent); }
+    .status-bar.error { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25); color: var(--warn); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status-bar.checking .status-dot { background: #7b5cf5; animation: pulse 1.5s infinite; }
+    .status-bar.ok .status-dot { background: var(--accent); }
+    .status-bar.error .status-dot { background: var(--warn); }
+    .user-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px; }
+    .user-bar-name { font-family: var(--mono); font-size: 13px; color: var(--text); }
+    .user-bar-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .logout-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; font-family: var(--mono); padding: 6px 10px; border-radius: 6px; transition: all 0.2s; }
+    .logout-btn:hover { color: var(--warn); background: rgba(255,107,107,0.08); }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+    .log-section { margin-top: 8px; }
+    .log-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .log-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface2); border-radius: 8px; margin-bottom: 6px; border-left: 3px solid transparent; font-size: 13px; }
+    .log-entry.in { border-left-color: var(--accent); }
+    .log-entry.out { border-left-color: var(--warn); }
+    .log-time { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .log-type { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .log-entry.in .log-type { color: var(--accent); }
+    .log-entry.out .log-type { color: var(--warn); }
+    .no-logs { color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0; }
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 22px; font-family: var(--mono); font-size: 13px; color: var(--text); z-index: 100; opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; pointer-events: none; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error { border-color: var(--warn); color: var(--warn); }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,229,160,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span class="logo-text">Attendance Portal</span>
+    </div>
+    <div class="clock-display" id="clockDisplay">--:--:--</div>
+    <div class="date-display" id="dateDisplay">--</div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="screen active">
+    <div class="card">
+      <h1 style="margin-bottom:24px; font-size:20px;">Sign <span>In</span></h1>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="staffId" placeholder="Enter your name" autocomplete="username"/>
+      </div>
+      <div class="form-group" style="margin-bottom:22px;">
+        <label>Password</label>
+        <input type="password" id="staffPin" placeholder="Enter your password" autocomplete="current-password"/>
+      </div>
+      <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">Sign In →</button>
+    </div>
+    <p style="text-align:center; font-size:12px; color:var(--muted); font-family:var(--mono);">
+      Contact your admin if you cannot log in.
+    </p>
+  </div>
+
+  <!-- ATTENDANCE SCREEN -->
+  <div id="attendanceScreen" class="screen">
+    <div class="card">
+      <div class="user-bar">
+        <div>
+          <div class="user-bar-name" id="displayName">--</div>
+          <div class="user-bar-role" id="displayId">--</div>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">Sign out</button>
+      </div>
+      <div class="status-bar checking" id="geoStatus">
+        <div class="status-dot"></div>
+        <span id="geoStatusText">Checking your location…</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="clockInBtn" onclick="recordAttendance('IN')" disabled>▶ Clock In</button>
+        <button class="btn btn-danger" id="clockOutBtn" onclick="recordAttendance('OUT')" disabled>■ Clock Out</button>
+      </div>
+      <div class="divider"></div>
+      <div class="log-section">
+        <div class="log-title">Today's Log</div>
+        <div id="logList"><div class="no-logs">No records yet today.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ============================================================
+//  CONFIGURATION — Only non-sensitive config lives here now
+// ============================================================
+const CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwJeE1rbJ9DzOUoUzA9Ciy7bwI21Ae7GLe49vQ_fL-pL2EFrMTLTrZA6JeiHcyv1HF9Nw/exec",
+  OFFICE_LAT: 12.960755999198966,
+  OFFICE_LNG: 77.57494934223409,
+  OFFICE_RADIUS_METERS: 200
+  // No staff list here anymore — credentials live in Google Sheet
+};
+// ============================================================
+
+let currentUser = null;
+let todayLog = [];
+let locationAllowed = false;
+let geoWatchId = null;
+
+// ── Clock ──────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById("clockDisplay").textContent =
+    now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  document.getElementById("dateDisplay").textContent =
+    now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Geolocation ────────────────────────────────────────────
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function startLocationWatch() {
+  if (!navigator.geolocation) {
+    setGeoStatus("error", "Geolocation not supported by your browser.");
+    return;
+  }
+  setGeoStatus("checking", "Checking your location…");
+  geoWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      const dist = haversineDistance(pos.coords.latitude, pos.coords.longitude,
+                                     CONFIG.OFFICE_LAT, CONFIG.OFFICE_LNG);
+      const distFormatted = dist < 1000 ? `${Math.round(dist)}m` : `${(dist/1000).toFixed(1)}km`;
+      if (dist <= CONFIG.OFFICE_RADIUS_METERS) {
+        locationAllowed = true;
+        setGeoStatus("ok", `📍 At office — ${distFormatted} away`);
+        setButtons(true);
+      } else {
+        locationAllowed = false;
+        setGeoStatus("error", `🚫 Too far from office (${distFormatted} away)`);
+        setButtons(false);
+      }
+    },
+    err => {
+      locationAllowed = false;
+      setGeoStatus("error", "Location access denied. Please enable it.");
+      setButtons(false);
+    },
+    { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
+  );
+}
+
+function stopLocationWatch() {
+  if (geoWatchId !== null) {
+    navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = null;
+  }
+}
+
+function setGeoStatus(type, message) {
+  const bar = document.getElementById("geoStatus");
+  bar.className = "status-bar " + type;
+  document.getElementById("geoStatusText").textContent = message;
+}
+
+function setButtons(enabled) {
+  const hasClockedIn = todayLog.some(e => e.type === "IN" && !todayLog.slice(todayLog.indexOf(e)+1).some(f => f.type === "OUT"));
+  document.getElementById("clockInBtn").disabled = !enabled || hasClockedIn;
+  document.getElementById("clockOutBtn").disabled = !enabled || !hasClockedIn;
+}
+
+// ── Auth — credentials verified by Apps Script backend ─────
+async function handleLogin() {
+  const name = document.getElementById("staffId").value.trim();
+  const pin  = document.getElementById("staffPin").value.trim();
+  if (!name || !pin) { showToast("Please enter your name and password.", "error"); return; }
+
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Verifying…`;
+
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL + "?action=login", {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "login", name, pin })
+    });
+    const data = await res.json();
+
+    if (data.status === "ok") {
+      currentUser = { id: data.name, name: data.name };
+      document.getElementById("displayName").textContent = data.name;
+      document.getElementById("displayId").textContent   = "Staff";
+      switchScreen("attendanceScreen");
+      startLocationWatch();
+      renderLog();
+    } else {
+      showToast(data.message || "Invalid name or password.", "error");
+    }
+  } catch (e) {
+    showToast("Network error. Please try again.", "error");
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = "Sign In →";
+}
+
+function handleLogout() {
+  stopLocationWatch();
+  currentUser = null;
+  todayLog = [];
+  locationAllowed = false;
+  document.getElementById("staffId").value = "";
+  document.getElementById("staffPin").value = "";
+  switchScreen("loginScreen");
+}
+
+function switchScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ── Attendance ─────────────────────────────────────────────
+async function recordAttendance(type) {
+  if (!locationAllowed) {
+    showToast("You must be at the office to record attendance.", "error");
+    return;
+  }
+  const btn = type === "IN" ? document.getElementById("clockInBtn") : document.getElementById("clockOutBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Saving…`;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-IN", { year:"numeric", month:"2-digit", day:"2-digit" });
+  const timeStr = now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+
+  const payload = {
+    action:  "attendance",
+    staffId: currentUser.id,
+    name:    currentUser.name,
+    date:    dateStr,
+    time:    timeStr,
+    type:    type
+  };
+
+  try {
+    await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    todayLog.push({ type, time: timeStr });
+    renderLog();
+    showToast(type === "IN" ? "✓ Clocked in successfully!" : "✓ Clocked out. See you tomorrow!", "success");
+  } catch (e) {
+    showToast("Network error. Please try again.", "error");
+    btn.disabled = false;
+  }
+
+  btn.innerHTML = type === "IN" ? "▶ Clock In" : "■ Clock Out";
+  setButtons(locationAllowed);
+}
+
+function renderLog() {
+  const list = document.getElementById("logList");
+  if (todayLog.length === 0) {
+    list.innerHTML = '<div class="no-logs">No records yet today.</div>';
+    return;
+  }
+  list.innerHTML = [...todayLog].reverse().map(e => `
+    <div class="log-entry ${e.type.toLowerCase()}">
+      <span class="log-type">${e.type === "IN" ? "Clock In" : "Clock Out"}</span>
+      <span class="log-time">${e.time}</span>
+    </div>`).join("");
+}
+
+// ── Toast ──────────────────────────────────────────────────
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "show " + type;
+  setTimeout(() => t.className = "", 3500);
+}
+
+document.getElementById("staffPin").addEventListener("keydown", e => {
+  if (e.key === "Enter") handleLogin();
+});
+</script>
+</body>
+</html>
